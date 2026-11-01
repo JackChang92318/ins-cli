@@ -1,0 +1,50 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const {PassThrough}=require('node:stream');
+const {parseUnreadEvidence}=require('./extension/unread.js');
+const {chatLabel}=require('./chat-picker.cjs');
+const {fromShortcodes,toShortcodes}=require('./emoji-codec.cjs');
+const {parseInput}=require('./input-actions.cjs');
+const {renderChat}=require('./chat-view.cjs');
+async function runChecks(){
+  assert.deepEqual(parseUnreadEvidence({labels:['Alice, 3 unread messages']}),{unread:true,unreadCount:3});
+  assert.deepEqual(parseUnreadEvidence({labels:['未讀訊息：2']}),{unread:true,unreadCount:2});
+  assert.deepEqual(parseUnreadEvidence({labels:['5 則未讀訊息']}),{unread:true,unreadCount:5});
+  assert.deepEqual(parseUnreadEvidence({labels:['Unread']}),{unread:true,unreadCount:null});
+  assert.deepEqual(parseUnreadEvidence({count:'0',labels:['Unread']}),{unread:false,unreadCount:0});
+  assert.deepEqual(parseUnreadEvidence({labels:['Mark as unread','Alice 2026']}),{unread:null,unreadCount:null});
+  assert.equal(parseUnreadEvidence({labels:['Unread'],badges:['8']}).unreadCount,8);
+  assert.equal(chatLabel({title:'Alice',unread:true,unreadCount:3}),'Alice [未讀 3 則]');
+  assert.equal(chatLabel({title:'Bob',unread:true,unreadCount:null}),'Bob [未讀]');
+  assert.equal(chatLabel({title:'Bob',unread:null,unreadCount:null}),'Bob');
+  assert.equal(fromShortcodes('拜託 :pleading_face:'),'拜託 🥺');
+  assert.equal(toShortcodes('拜託 🥺'),'拜託 :pleading_face:');
+  assert.equal(fromShortcodes(':this_does_not_exist:'),':this_does_not_exist:');
+  assert.equal(parseInput(':pleading_face:','A').text,'🥺');
+  assert.equal(parseInput('/:pleading_face:','A').type,'error');
+  for(const emoji of ['🥺','❤️','👍🏽','🇹🇼','1️⃣','👨‍👩‍👧‍👦','🧑🏽‍💻','👨🏻‍🤝‍👨🏿'])assert.equal(fromShortcodes(toShortcodes(emoji)).replace(/\uFE0F/g,''),emoji.replace(/\uFE0F/g,''));
+  const emojiEntries=require('./emoji-data.json');
+  for(const [emoji] of emojiEntries)assert.equal(fromShortcodes(toShortcodes(emoji)).replace(/\uFE0F/g,''),emoji.replace(/\uFE0F/g,''),'roundtrip '+emoji);
+  assert.ok(fromShortcodes(':unicode_1f600_1b:').includes(':unicode_')); // No control-character injection.
+  const screen=renderChat({title:'Alice',messages:[{sender:'Alice',text:'🥺'}]},{rows:24,columns:80});
+  assert.ok(screen.includes('🥺'));
+  const anchor={innerText:'Alice',href:'https://www.instagram.com/direct/t/123/',getClientRects:()=>[{}],getAttribute:name=>name==='aria-label'?'Alice, 3 unread messages':null,querySelectorAll:()=>[]};
+  const main={querySelectorAll:()=>[]};
+  const document={body:main,title:'Instagram',readyState:'complete',querySelectorAll:selector=>selector==='*'?[anchor,main]:selector==='main,[role="main"]'?[main]:selector==='a[href]'?[anchor]:[]};
+  let listener;
+  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{document,InsMessageFormat:require('./extension/message-format.js'),InsUnread:{parseUnreadEvidence},chrome:{runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}},location:{pathname:'/direct/inbox/',href:'https://www.instagram.com/direct/inbox/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),URL});
+  const result=await new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},resolve));
+  assert.equal(result.snapshot.chats[0].unreadCount,3);
+  // Live unread updates must preserve the numbered order during selection.
+  let refresh,cleared=false;
+  const mod={exports:{}};
+  vm.runInNewContext(fs.readFileSync(__dirname+'/chat-picker.cjs','utf8'),{module:mod,require,process,setTimeout,setInterval:fn=>{refresh=fn;return 1;},clearInterval:()=>{cleared=true;}});
+  const input=new PassThrough();input.isTTY=true;input.setRawMode=()=>{};let output='';
+  const choices=[{key:'A',title:'Alice'},{key:'B',title:'Bob'}];
+  const selected=mod.exports.chooseChat(choices,{input,output:{write:text=>{output+=text;},rows:24},getChats:()=>[{key:'B',title:'Bob',unread:true,unreadCount:5},{key:'A',title:'Alice'}]});
+  refresh();assert.ok(output.includes('Bob [未讀 5 則]'));input.write('2\r');assert.equal((await selected).key,'B');assert.ok(cleared);
+  return {emojiEntries:emojiEntries.length,features:'unread evidence and DOM extraction, stable live list, shortcode input/output and dictionary roundtrips'};
+}
+if(require.main===module)runChecks().then(console.log).catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={runChecks};

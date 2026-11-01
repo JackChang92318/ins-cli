@@ -1,0 +1,12 @@
+node_modules/
+legacy-backup-*/
+before-*/
+*.bak
+messages.json
+photo.html
+sticker.html
+*.tmp
+.env
+.env.*
+!.env.example
+*.log

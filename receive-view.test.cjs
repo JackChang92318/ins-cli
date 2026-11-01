@@ -1,0 +1,55 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const {renderChat}=require('./chat-view.cjs');
+const {viewKey,shouldDisplay}=require('./view-state.cjs');
+async function runChecks(){
+  let listener;
+  const rect=(left,width)=>({left,top:200,width,height:40,bottom:240});
+  const node=(value,left=600,width=200)=>({innerText:value,getClientRects:()=>[{}],getBoundingClientRect:()=>rect(left,width),contains:()=>false,querySelectorAll:()=>[]});
+  const outgoing=node('你：你好'),incoming=node('朋友：我收到囉'),nested=node('引用內容');
+  incoming.contains=other=>other===nested;
+  const sidebar=node('側欄預覽',100,200);
+  const editor=node('',500,500);
+  const articles=[sidebar,outgoing,incoming,nested];
+  const main={querySelectorAll(selector){
+    if(selector==='*')return [...articles,editor];
+    if(selector==='[role="article"],article')return articles;
+    return [];
+  }};
+  const document={body:main,title:'Friend',readyState:'complete',querySelectorAll(selector){
+    if(selector==='*')return [main];
+    if(selector==='main,[role="main"]')return [main];
+    if(selector.startsWith('[contenteditable='))return [editor];
+    return [];
+  }};
+  const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
+  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{InsMessageFormat:require('./extension/message-format.js'),document,chrome,location:{pathname:'/direct/t/123/',href:'https://www.instagram.com/direct/t/123/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),innerWidth:1400,URL});
+  const snapshot=()=>new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},result=>resolve(result.snapshot)));
+  const first=await snapshot();
+  assert.deepEqual(Array.from(first.messages,m=>m.text),['你好','朋友：我收到囉']);
+  assert.equal(first.diagnostics.messageSource,'article');assert.equal(first.warning,'');
+  articles.push(node('朋友：新訊息'));
+  const next=await snapshot();
+  assert.equal(next.messages.at(-1).text,'朋友：新訊息');assert.equal(shouldDisplay(next,viewKey(first)),true);
+  const screen=renderChat(next,{columns:80,rows:24});
+  assert.ok(screen.startsWith('\x1b[2J\x1b[H'));assert.ok(screen.includes('朋友：新訊息'));
+  assert.ok(!screen.includes('/direct/t/'));assert.ok(!screen.includes('側欄預覽'));
+  const long=renderChat({...next,messages:Array.from({length:100},(_,i)=>'訊息 '+i)},{columns:40,rows:24});
+  assert.ok(long.includes('訊息 99'));assert.ok(!long.includes('訊息 0\n'));
+  assert.ok(long.split('\n').length<=18);
+  const cli=fs.readFileSync(__dirname+'/cli.cjs','utf8');
+  assert.ok(!cli.includes('const answer=await rl.question'));
+  const unstable=node('暫時失去 aria 標記的訊息',650,200);
+  let senderLabel='Message from Alice';
+  unstable.getAttribute=attribute=>attribute==='aria-label'?senderLabel:null;
+  articles.push(unstable);
+  assert.equal((await snapshot()).messages.at(-1).sender,'Alice');
+  senderLabel=null;
+  assert.equal((await snapshot()).messages.at(-1).sender,'Alice');
+  unstable.innerText='這是重用 DOM 的另一則訊息';
+  assert.equal((await snapshot()).messages.at(-1).direction,'unknown');
+  return 16;
+}
+if(require.main===module)runChecks().then(n=>console.log(`${n} receive/view checks passed`)).catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={runChecks};

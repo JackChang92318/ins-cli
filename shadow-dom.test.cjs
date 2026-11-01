@@ -1,0 +1,45 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+async function runChecks(){
+  let listener,clicked=0;
+  const location={pathname:'/direct/inbox/',origin:'https://www.instagram.com',href:'https://www.instagram.com/direct/inbox/'};
+  const rect=(left,top,width,height)=>({left,top,width,height,bottom:top+height});
+  const base={getClientRects:()=>[{}],getAttribute:()=>null,contains:()=>false,isConnected:true};
+  const nav={...base,tagName:'DIV',innerText:'訊息',getBoundingClientRect:()=>rect(24,350,24,24)};
+  const heading={...base,tagName:'SPAN',innerText:'訊息',getBoundingClientRect:()=>rect(100,300,60,25)};
+  const row={...base,tagName:'DIV',innerText:'Friend\nPreview',querySelectorAll:()=>[],getAttribute:name=>name==='role'?'button':null,getBoundingClientRect:()=>rect(100,350,400,72),click(){clicked++;location.pathname='/direct/t/555/';}};
+  const message={...base,tagName:'DIV',innerText:'hello from shadow',querySelectorAll:()=>[],getBoundingClientRect:()=>rect(600,200,300,40)};
+  const editor={...base,tagName:'DIV',getBoundingClientRect:()=>rect(600,700,300,40)};
+  const main={...base,querySelectorAll:selector=>selector==='*'?[heading,row,message,editor]:selector.includes('[role="row"]')&&location.pathname.includes('/t/')?[message]:[]};
+  const controls='[role="button"],button,[role="row"],[role="listitem"],[tabindex="0"]';
+  const inner={querySelectorAll(selector){
+    if(selector==='*')return [main,heading,row,message,editor];
+    if(selector==='main,[role="main"]')return [main];
+    if(selector==='h1,h2,h3,[role="heading"],span,div')return [heading,row];
+    if(selector===controls)return [row];
+    if(selector.startsWith('[contenteditable='))return location.pathname.includes('/t/')?[editor]:[];
+    return [];
+  }};
+  const innerHost={...base,tagName:'DIV',shadowRoot:inner,getBoundingClientRect:()=>rect(72,0,900,900)};
+  const outer={querySelectorAll:selector=>selector==='*'?[innerHost]:[]};
+  const host={...base,tagName:'DIV',shadowRoot:outer,getBoundingClientRect:()=>rect(72,0,900,900)};
+  const document={title:'Instagram',readyState:'complete',body:main,querySelectorAll:selector=>selector==='*'?[nav,host]:[]};
+  const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
+  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{InsMessageFormat:require('./extension/message-format.js'),document,chrome,location,innerWidth:1400,getComputedStyle:()=>({visibility:'visible'}),setTimeout:fn=>setTimeout(fn,0),URL});
+  const run=command=>new Promise(resolve=>listener({source:'nightchat',command},{id:'test'},resolve));
+  const inbox=await run({type:'snapshot'});
+  assert.equal(inbox.snapshot.chats.length,1);
+  assert.equal(inbox.snapshot.chats[0].title,'Friend');
+  assert.equal(inbox.snapshot.diagnostics.readerVersion,'0.5.0-live');
+  const opened=await run({type:'openChat',key:inbox.snapshot.chats[0].key,sourcePath:location.pathname});
+  assert.equal(clicked,1);assert.equal(opened.snapshot.thread,'555');
+  assert.equal(opened.snapshot.messages[0].text,'hello from shadow');
+  assert.equal(opened.snapshot.diagnostics.editors,1);
+  const inspection=await run({type:'inspect'});
+  assert.equal(inspection.diagnostics.documents.length,3);
+  assert.equal(inspection.diagnostics.documents[2].where,'top/shadow[0]/shadow[0]');
+  return 9;
+}
+if(require.main===module)runChecks().then(n=>console.log(`${n} shadow DOM checks passed`)).catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={runChecks};
