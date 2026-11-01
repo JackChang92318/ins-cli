@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const format=require('./extension/message-format.js');
+const format=require('../extension/message-format.js');
 async function runChecks(){
   for(const emoji of ['😂','❤️','👍🏽','👨‍👩‍👧‍👦','🇹🇼','1️⃣'])assert.equal(format.emojiAlt(emoji),emoji);
   for(const alt of ['Profile picture','photo of Alice',':smile:','hello 😂'])assert.equal(format.emojiAlt(alt),'');
@@ -26,7 +26,7 @@ async function runChecks(){
   const document={body:main,title:'Instagram',readyState:'complete',querySelectorAll:selector=>selector==='*'?[main]:selector==='main,[role="main"]'?[main]:[]};
   let listener;
   const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{InsMessageFormat:format,document,chrome,location:{pathname:'/direct/t/123/',href:'https://www.instagram.com/direct/t/123/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),innerWidth:1400,URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{InsMessageFormat:format,document,chrome,location:{pathname:'/direct/t/123/',href:'https://www.instagram.com/direct/t/123/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),innerWidth:1400,URL});
   const result=await new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},resolve));
   assert.deepEqual(Array.from(result.snapshot.messages,m=>m.text),['😂','太好笑😂了','❤️👍🏽🇹🇼','嗨👨‍👩‍👧‍👦','[圖片／貼圖]']);
   return 11;

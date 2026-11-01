@@ -2,10 +2,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {PassThrough}=require('node:stream');
-const unread=require('./extension/unread.js');
-const {width,clip}=require('./terminal-text.cjs');
-const {CommandInput}=require('./command-input.cjs');
-const {renderChat,wrap}=require('./chat-view.cjs');
+const unread=require('../extension/unread.js');
+const {width,clip}=require('../src/terminal-text.cjs');
+const {CommandInput}=require('../src/command-input.cjs');
+const {renderChat,wrap}=require('../src/chat-view.cjs');
 async function runChecks(){
   const container={left:100,top:350,width:400,height:80};
   const rect={left:470,top:380,width:8,height:8};
@@ -36,7 +36,7 @@ async function runChecks(){
   const main={querySelectorAll:()=>[]};
   const document={body:main,title:'Instagram',readyState:'complete',querySelectorAll:selector=>selector==='*'?[anchor,row,main]:selector==='a[href]'?[anchor]:selector==='main,[role="main"]'?[main]:[]};
   let listener;
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{document,InsMessageFormat:require('./extension/message-format.js'),InsUnread:unread,chrome:{runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}},location:{pathname:'/direct/inbox/',href:'https://www.instagram.com/direct/inbox/',origin:'https://www.instagram.com'},getComputedStyle:node=>node===dotNode?{visibility:'visible',backgroundColor:'rgb(0, 149, 246)',borderRadius:'50%'}:{visibility:'visible'},URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{document,InsMessageFormat:require('../extension/message-format.js'),InsUnread:unread,chrome:{runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}},location:{pathname:'/direct/inbox/',href:'https://www.instagram.com/direct/inbox/',origin:'https://www.instagram.com'},getComputedStyle:node=>node===dotNode?{visibility:'visible',backgroundColor:'rgb(0, 149, 246)',borderRadius:'50%'}:{visibility:'visible'},URL});
   const result=await new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},resolve));
   assert.equal(result.snapshot.chats[0].unread,true);assert.equal(result.snapshot.chats[0].unreadCount,null);
   return 'native emoji and grapheme editing, blue unread dot, and unread siblings outside links';

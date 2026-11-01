@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const {PassThrough}=require('node:stream');
-const {CommandInput,matches}=require('./command-input.cjs');
+const {CommandInput,matches}=require('../src/command-input.cjs');
 async function runChecks(){
   let count=0;
   function prompt(){

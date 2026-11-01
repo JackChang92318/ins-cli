@@ -2,9 +2,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {PassThrough}=require('node:stream');
-const {CommandInput}=require('./command-input.cjs');
-const {buildMessage}=require('./extension/message-format.js');
-const {createBridge}=require('./bridge.cjs');
+const {CommandInput}=require('../src/command-input.cjs');
+const {buildMessage}=require('../extension/message-format.js');
+const {createBridge}=require('../src/bridge.cjs');
 const flush=async()=>{for(let i=0;i<40;i++)await Promise.resolve();};
 async function runChecks(){
   const stream=new PassThrough();stream.isTTY=true;stream.isRaw=false;
@@ -30,7 +30,7 @@ async function runChecks(){
     runtime:{getURL:()=> 'popup',onMessage:{addListener(fn){listener=fn;}}},
     tabs:{sendMessage:async()=>hang?new Promise(()=>{}):{snapshot:{messages:[]}}},
     alarms:{create:async()=>{},clear:async()=>{},onAlarm:{addListener(){}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/background.js','utf8'),{
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/background.js','utf8'),{
     chrome,AbortSignal,clearTimeout:id=>timers.delete(id),setTimeout:(fn,ms)=>{timers.set(++timerId,{fn,ms});return timerId;},
     fetch:async(url,options)=>{
       if(url.endsWith('/poll')&&options.headers.Authorization==='Bearer '+ 'a'.repeat(48))return new Promise(resolve=>{oldReply=resolve;});

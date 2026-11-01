@@ -1,10 +1,10 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {Notifications}=require('./notifications.cjs');
-const {watchSnapshots}=require('./extension/live-reader.js');
-const {createBridge}=require('./bridge.cjs');
-const {CommandInput}=require('./command-input.cjs');
+const {Notifications}=require('../src/notifications.cjs');
+const {watchSnapshots}=require('../extension/live-reader.js');
+const {createBridge}=require('../src/bridge.cjs');
+const {CommandInput}=require('../src/command-input.cjs');
 const {PassThrough}=require('node:stream');
 const flush=async()=>{for(let n=0;n<30;n++)await Promise.resolve();};
 async function runChecks(){
@@ -54,7 +54,7 @@ async function runChecks(){
   let listener,pair=null,posts=[];
   const chrome={runtime:{id:'extension',getURL:()=> 'popup',onMessage:{addListener:fn=>{listener=fn;}}},
     storage:{session:{get:async()=>({pair})}},alarms:{onAlarm:{addListener(){}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/background.js','utf8'),{chrome,AbortSignal,setTimeout,clearTimeout,fetch:async(url,options)=>{posts.push({url,body:JSON.parse(options.body)});return {ok:true,json:async()=>({ok:true})};}});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/background.js','utf8'),{chrome,AbortSignal,setTimeout,clearTimeout,fetch:async(url,options)=>{posts.push({url,body:JSON.parse(options.body)});return {ok:true,json:async()=>({ok:true})};}});
   await flush();pair={token:'token',tabId:5};
   const message={source:'nightchat',type:'snapshotChanged',snapshot};
   const sender={id:'extension',frameId:0,tab:{id:5},url:'https://www.instagram.com/direct/t/A/'};
@@ -83,10 +83,10 @@ async function runChecks(){
   const dependencies={
     './bridge.cjs':{createBridge:()=>cliBridge,clean:String},'./command-input.cjs':{CommandInput:FakeInput},
     './notifications.cjs':{Notifications:class extends Notifications{constructor(){super({output:cliOutput});}}},
-    './chat-picker.cjs':{},'./view-state.cjs':require('./view-state.cjs'),'./chat-view.cjs':require('./chat-view.cjs'),'./input-actions.cjs':require('./input-actions.cjs'),
+    './chat-picker.cjs':{},'./view-state.cjs':require('../src/view-state.cjs'),'./chat-view.cjs':require('../src/chat-view.cjs'),'./input-actions.cjs':require('../src/input-actions.cjs'),
   };
   const mod={exports:{}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/cli.cjs','utf8'),{require:name=>dependencies[name],module:mod,console:{log(){},error(){}},process:{stdout:cliOutput},setInterval:()=>1,clearInterval(){}});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../src/cli.cjs','utf8'),{require:name=>dependencies[name],module:mod,console:{log(){},error(){}},process:{stdout:cliOutput},setInterval:()=>1,clearInterval(){}});
   await mod.exports.main();assert.ok(unsubscribed&&closed);
   // Bridge events arrive immediately and stale poll responses cannot roll back
   // a newer push. No timer or /r is needed to receive this event.

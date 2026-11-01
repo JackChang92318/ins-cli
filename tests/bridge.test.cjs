@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {Readable}=require('node:stream');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {createBridge,clean}=require('./bridge.cjs');
+const {createBridge,clean}=require('../src/bridge.cjs');
 function call(bridge,method,url,body,headers={}){
   return new Promise(resolve=>{
     const req=Readable.from(body?[Buffer.from(JSON.stringify(body))]:[]);
@@ -52,7 +52,7 @@ function contentHarness({path='/direct/t/123/',draft='',buttons=1}={}){
   const scope={querySelectorAll:()=>Array.from({length:buttons},()=>({...button}))};
   const document={body:scope,querySelector:()=>scope,querySelectorAll:selector=>selector.includes('contenteditable')?[box]:[],execCommand(type,ui,text){inserted++;box.textContent=text;return true;}};
   const chrome={runtime:{id:'extension',onMessage:{addListener(fn){listener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'extension','content.js'),'utf8'),{document,chrome,location:{pathname:path},getComputedStyle:()=>({visibility:'visible'}),setTimeout:fn=>setTimeout(fn,0),URL,Event:class{}});
+  vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','extension','content.js'),'utf8'),{document,chrome,location:{pathname:path},getComputedStyle:()=>({visibility:'visible'}),setTimeout:fn=>setTimeout(fn,0),URL,Event:class{}});
   return {run:command=>new Promise(resolve=>listener({source:'nightchat',command},{id:'extension'},resolve)),stats:()=>({clicked,inserted,draft:box.textContent})};
 }
 test('page rejects send after user switches conversations',async()=>{

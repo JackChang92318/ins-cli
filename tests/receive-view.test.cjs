@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {renderChat}=require('./chat-view.cjs');
-const {viewKey,shouldDisplay}=require('./view-state.cjs');
+const {renderChat}=require('../src/chat-view.cjs');
+const {viewKey,shouldDisplay}=require('../src/view-state.cjs');
 async function runChecks(){
   let listener;
   const rect=(left,width)=>({left,top:200,width,height:40,bottom:240});
@@ -24,7 +24,7 @@ async function runChecks(){
     return [];
   }};
   const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{InsMessageFormat:require('./extension/message-format.js'),document,chrome,location:{pathname:'/direct/t/123/',href:'https://www.instagram.com/direct/t/123/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),innerWidth:1400,URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{InsMessageFormat:require('../extension/message-format.js'),document,chrome,location:{pathname:'/direct/t/123/',href:'https://www.instagram.com/direct/t/123/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),innerWidth:1400,URL});
   const snapshot=()=>new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},result=>resolve(result.snapshot)));
   const first=await snapshot();
   assert.deepEqual(Array.from(first.messages,m=>m.text),['你好','朋友：我收到囉']);
@@ -38,7 +38,7 @@ async function runChecks(){
   const long=renderChat({...next,messages:Array.from({length:100},(_,i)=>'訊息 '+i)},{columns:40,rows:24});
   assert.ok(long.includes('訊息 99'));assert.ok(!long.includes('訊息 0\n'));
   assert.ok(long.split('\n').length<=18);
-  const cli=fs.readFileSync(__dirname+'/cli.cjs','utf8');
+  const cli=fs.readFileSync(__dirname+'/../src/cli.cjs','utf8');
   assert.ok(!cli.includes('const answer=await rl.question'));
   const unstable=node('暫時失去 aria 標記的訊息',650,200);
   let senderLabel='Message from Alice';

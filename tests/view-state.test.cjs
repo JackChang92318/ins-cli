@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {viewKey,shouldDisplay}=require('./view-state.cjs');
+const {viewKey,shouldDisplay}=require('../src/view-state.cjs');
 function runChecks(){
   let count=0;
   const original={thread:'123',path:'/direct/t/123/',title:'Friend',messages:[],warning:'尚未辨識到訊息列',chats:[],diagnostics:{totalButtons:10}};

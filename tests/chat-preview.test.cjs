@@ -1,9 +1,9 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const unread=require('./extension/unread.js');
-const {chatLabel}=require('./chat-picker.cjs');
-const {viewKey}=require('./view-state.cjs');
+const unread=require('../extension/unread.js');
+const {chatLabel}=require('../src/chat-picker.cjs');
+const {viewKey}=require('../src/view-state.cjs');
 async function runChecks(){
   const leo=unread.summarizeChatText({rowText:'Leo\n2 new messages · 2分鐘',title:'Leo'});
   assert.deepEqual(leo,{title:'Leo',preview:'2 new messages'});
@@ -29,7 +29,7 @@ async function runChecks(){
   anchor.parentElement=row;
   const main={querySelectorAll:()=>[]};
   const document={body:main,title:'Instagram',readyState:'complete',querySelectorAll:selector=>selector==='*'?[row,main]:selector==='a[href]'?[anchor]:selector==='main,[role="main"]'?[main]:[]};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{document,InsUnread:unread,InsMessageFormat:require('./extension/message-format.js'),chrome:{runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}},location:{pathname:'/direct/inbox/',href:'https://www.instagram.com/direct/inbox/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{document,InsUnread:unread,InsMessageFormat:require('../extension/message-format.js'),chrome:{runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}},location:{pathname:'/direct/inbox/',href:'https://www.instagram.com/direct/inbox/',origin:'https://www.instagram.com'},getComputedStyle:()=>({visibility:'visible'}),URL});
   const result=await new Promise(resolve=>listener({source:'nightchat',command:{type:'snapshot'}},{id:'test'},resolve));
   const chat=result.snapshot.chats[0];assert.equal(chat.title,'Leo');assert.equal(chat.preview,'2 new messages');assert.equal(chat.unreadCount,2);
   return 16;

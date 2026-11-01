@@ -11,7 +11,7 @@ async function runChecks(){
   const blocked={...base,src:'https://other.example/widget?secret=SECRET',get contentDocument(){throw new Error('blocked');}};
   const document={readyState:'complete',querySelectorAll:selector=>selector==='*'?[frame,blocked]:selector==='iframe'?[frame,blocked]:[]};
   const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{document,chrome,location:{href:'https://www.instagram.com/direct/inbox/'},getComputedStyle:()=>({visibility:'visible'}),URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{document,chrome,location:{href:'https://www.instagram.com/direct/inbox/'},getComputedStyle:()=>({visibility:'visible'}),URL});
   const result=await new Promise(resolve=>listener({source:'nightchat',command:{type:'inspect'}},{id:'test'},resolve));
   assert.equal(result.diagnostics.documents.length,2);
   assert.equal(result.diagnostics.documents[0].frames[0].readable,true);

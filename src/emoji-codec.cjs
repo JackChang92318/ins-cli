@@ -1,4 +1,4 @@
-const entries=require('./emoji-data.json');
+const entries=require('../data/emoji.json');
 const aliases=new Map(),names=new Map();
 const normalize=value=>value.replace(/\uFE0F/g,'');
 for(const [emoji,list] of entries){

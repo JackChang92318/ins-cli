@@ -47,14 +47,14 @@ CLI 不另外登入 Instagram。擴充套件讀取你選定分頁上已載入的
 5. 在專案資料夾執行 `start.bat`，也可以在終端機執行：
 
    ```powershell
-   node cli.cjs
+   node src/cli.cjs
    ```
 
 6. 複製 CLI 顯示的配對碼。在 Instagram 分頁開啟 ins-cli 擴充套件，貼上配對碼，按「連接此分頁」。
 7. 回到終端機，配對完成後會自動顯示聊天室選單。用方向鍵或編號選人，按 Enter 開啟。
 8. 直接輸入文字，按 Enter 傳送。
 
-目前沒有 npm 相依套件，不需要執行 `npm install`。`install.bat` 也只是顯示使用提示，不會安裝軟體。
+目前沒有 npm 相依套件，不需要執行 `npm install`。
 
 ### 配對碼是什麼
 
@@ -126,15 +126,32 @@ npm test
 
 | 檔案 | 用途 |
 | --- | --- |
-| [`cli.cjs`](cli.cjs) | CLI 主流程 |
-| [`bridge.cjs`](bridge.cjs) | 本機橋接與配對驗證 |
-| [`command-input.cjs`](command-input.cjs) | 輸入框與指令補完 |
-| [`chat-picker.cjs`](chat-picker.cjs)、[`chat-view.cjs`](chat-view.cjs) | 聊天室選擇與對話顯示 |
-| [`notifications.cjs`](notifications.cjs) | 新訊息提醒、提示音與分頁標記 |
+| [`src/cli.cjs`](src/cli.cjs) | CLI 主流程 |
+| [`src/bridge.cjs`](src/bridge.cjs) | 本機橋接與配對驗證 |
+| [`src/command-input.cjs`](src/command-input.cjs) | 輸入框與指令補完 |
+| [`src/chat-picker.cjs`](src/chat-picker.cjs)、[`src/chat-view.cjs`](src/chat-view.cjs) | 聊天室選擇與對話顯示 |
+| [`src/notifications.cjs`](src/notifications.cjs) | 新訊息提醒、提示音與分頁標記 |
 | [`extension/`](extension) | Edge 擴充套件、網頁讀取與操作 |
+
+專案結構：
+
+```text
+ins-cli/
+├─ src/          CLI 程式碼
+├─ extension/    Edge 擴充套件
+├─ tests/        測試與測試執行器
+├─ data/         Emoji 字典資料
+├─ docs/         資料來源說明
+├─ licenses/     第三方授權
+├─ start.bat     Windows 啟動入口
+├─ package.json
+└─ README.md
+```
+
+本機的舊備份與早期範例集中在 `.local/legacy/`，由 `.gitignore` 排除，不會上傳 GitHub，也不會被正式程式或測試載入。
 
 遇到問題可以附上錯誤文字和 `/inspect` 的輸出，回報前請自行檢查是否含有不想公開的資訊，不需要提供帳密、配對碼或聊天內容。
 
 ## 第三方資料
 
-Emoji 短碼資料來自 GitHub 的 gemoji。來源與轉換說明見 [`emoji-data-SOURCE.md`](emoji-data-SOURCE.md)，授權文字保留於 [`gemoji-LICENSE`](gemoji-LICENSE)。
+Emoji 短碼資料來自 GitHub 的 gemoji。來源與轉換說明見 [`docs/emoji-data.md`](docs/emoji-data.md)，授權文字保留於 [`licenses/gemoji-LICENSE`](licenses/gemoji-LICENSE)。

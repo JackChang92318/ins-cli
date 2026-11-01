@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const {PassThrough}=require('node:stream');
-const {CommandInput,cells}=require('./command-input.cjs');
-const {renderChat}=require('./chat-view.cjs');
+const {CommandInput,cells}=require('../src/command-input.cjs');
+const {renderChat}=require('../src/chat-view.cjs');
 class Screen{
   constructor(){this.rows=24;this.columns=80;this.row=0;this.col=0;this.lines=Array.from({length:24},()=>Array(80).fill(''));this.scrolls=0;}
   write(text){

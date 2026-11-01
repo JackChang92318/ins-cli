@@ -26,7 +26,7 @@ async function runChecks(){
   const host={...base,tagName:'DIV',shadowRoot:outer,getBoundingClientRect:()=>rect(72,0,900,900)};
   const document={title:'Instagram',readyState:'complete',body:main,querySelectorAll:selector=>selector==='*'?[nav,host]:[]};
   const chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{InsMessageFormat:require('./extension/message-format.js'),document,chrome,location,innerWidth:1400,getComputedStyle:()=>({visibility:'visible'}),setTimeout:fn=>setTimeout(fn,0),URL});
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{InsMessageFormat:require('../extension/message-format.js'),document,chrome,location,innerWidth:1400,getComputedStyle:()=>({visibility:'visible'}),setTimeout:fn=>setTimeout(fn,0),URL});
   const run=command=>new Promise(resolve=>listener({source:'nightchat',command},{id:'test'},resolve));
   const inbox=await run({type:'snapshot'});
   assert.equal(inbox.snapshot.chats.length,1);

@@ -2,11 +2,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {PassThrough}=require('node:stream');
-const {parseInput}=require('./input-actions.cjs');
-const {CommandInput}=require('./command-input.cjs');
-const {chooseChat}=require('./chat-picker.cjs');
-const {buildMessage,shareUrl}=require('./extension/message-format.js');
-const {renderChat}=require('./chat-view.cjs');
+const {parseInput}=require('../src/input-actions.cjs');
+const {CommandInput}=require('../src/command-input.cjs');
+const {chooseChat}=require('../src/chat-picker.cjs');
+const {buildMessage,shareUrl}=require('../extension/message-format.js');
+const {renderChat}=require('../src/chat-view.cjs');
 async function runChecks(){
   assert.deepEqual(parseInput('/chat','A'),{type:'chat'});
   assert.deepEqual(parseInput('/chats','A'),{type:'chat'});
@@ -50,13 +50,13 @@ async function runChecks(){
     }};
     class FakeInput{constructor(){this.active=false;}printAbove(fn){fn();}async question(){this.active=true;tick();questions++;const line=actions.shift()||'/quit';this.active=false;return line;}}
     const dependencies={
-      './notifications.cjs':require('./notifications.cjs'),
+      './notifications.cjs':require('../src/notifications.cjs'),
       './bridge.cjs':{createBridge:()=>bridge,clean:String},'./command-input.cjs':{CommandInput:FakeInput},
       './chat-picker.cjs':{chooseChat:async chats=>chats[0],waitForSnapshot:async(b,predicate)=>{assert.ok(predicate(b.snapshot));return b.snapshot;}},
-      './view-state.cjs':require('./view-state.cjs'),'./chat-view.cjs':{renderChat:()=>''},'./input-actions.cjs':{parseInput},
+      './view-state.cjs':require('../src/view-state.cjs'),'./chat-view.cjs':{renderChat:()=>''},'./input-actions.cjs':{parseInput},
     };
     const mod={exports:{}};
-    vm.runInNewContext(fs.readFileSync(__dirname+'/cli.cjs','utf8'),{require:n=>dependencies[n],module:mod,console:{log(){},error(){}},process:{stdout:{write(){},rows:24,columns:80}},setInterval:fn=>{tick=fn;return 1;},clearInterval(){}});
+    vm.runInNewContext(fs.readFileSync(__dirname+'/../src/cli.cjs','utf8'),{require:n=>dependencies[n],module:mod,console:{log(){},error(){}},process:{stdout:{write(){},rows:24,columns:80}},setInterval:fn=>{tick=fn;return 1;},clearInterval(){}});
     await mod.exports.main();return {calls,questions};
   }
   const switched=await cliScenario(['/chat','hello','/quit']);
@@ -68,7 +68,7 @@ async function runChecks(){
   // Inbox navigation must not click a similarly labelled notifications link.
   let navListener,assigned;
   const navChrome={runtime:{id:'test',onMessage:{addListener(fn){navListener=fn;}}}};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/content.js','utf8'),{chrome:navChrome,
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../extension/content.js','utf8'),{chrome:navChrome,
     document:{querySelectorAll(){throw new Error('Should not click page navigation controls');}},
     location:{assign:path=>{assigned=path;}},setTimeout:fn=>{fn();},URL});
   const navResult=await new Promise(resolve=>navListener({source:'nightchat',command:{type:'navigate',path:'/direct/inbox/'}},{id:'test'},resolve));
